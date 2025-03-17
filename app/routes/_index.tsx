@@ -3,6 +3,7 @@ registerLicense('Ngo9BigBOggjHTQxAR8/V1NMaF1cXGJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHV
 
 import type { MetaFunction } from "@remix-run/node";
 
+import { useLoaderData } from '@remix-run/react'
 import { useRef } from 'react';
 
 import '@syncfusion/ej2-base/styles/material.css';
@@ -25,9 +26,42 @@ import { ColumnsDirective, ColumnDirective, Inject, Selection, AddDialogFieldsDi
 import { Edit, Toolbar, ToolbarItem } from '@syncfusion/ej2-react-gantt';
 import { DayMarkers, ContextMenu, Reorder, ColumnMenu, Filter, Sort } from '@syncfusion/ej2-react-gantt';
 
+import { getTasks, getResources } from "~/utils/tasks";
+
+//Ver como mapear os recursos e mostrar eles no campo de recursos do ganttcomponent
+//Mudar a API para lidar com as solicitações
+
+export async function loader() {
+  const tasks = await getTasks();
+  const resources = await getResources();
+  //return { tasks, resources };
+  console.log("Recursos encontrados:", resources);
+
+//depois tem que mapear os campos
+//mapear cada campo da tarefa para um objeto
+const tasksWithId = tasks.map((task: any, index: number) => ({
+  TaskID: task.id,
+    taskName: task.taskName,
+    StartDate: new Date(task.startDate),//.toISOString().split('T')[0],
+    EndDate: new Date(task.endDate).toISOString().split('T')[0],
+    Duration: task.duration,
+    Progress: task.progress,
+    parentId: task.parentId,
+    Predecessor: task.predecessor,    
+    notes: task.notes,
+    Resources: task.resources.map((resource: any) => resource.id) // Map resource IDs
+  }));
+  console.log("tarefas FORMATADAS", tasksWithId);
+return ({ tasks: tasksWithId, resources });
+};
 
 export default function GanttRoute() {  
   const ganttRef = useRef<GanttComponent>(null);
+  const {tasks, resources} = useLoaderData<typeof loader>();
+  
+  if (tasks.length === 0) {
+    console.log("Não há tarefas para exibir");
+    };
 
 //função para o botão de salvar
 	const handleSaveButton = async () => {    
@@ -75,10 +109,16 @@ export default function GanttRoute() {
       <GanttComponent
         ref={ganttRef}
         id='Default'
-        //dataSource={formattedTasks} //primeira fonte de dados vem do loader                
+        //dataSource={tasks} //tem que mapear os campos primeiro
         actionComplete={handleActionComplete}
 
         //resourceFields: define o mapa de campos para os recursos
+        resourceFields={{
+          id: 'id',
+          name: 'resourceName',
+          unit: 'resourceRole'
+        }}
+
         //taskFields: define o mapa de campos para as tarefas
         taskFields={{
           id: 'TaskID',
@@ -90,7 +130,7 @@ export default function GanttRoute() {
           parentID: 'parentId', //esse é a relação para dados flat 
           notes: 'Notes',
           //ainda não tenho coluna para o 'Resources'
-          //resources: 'Resources',
+          resourceInfo: 'Resources',
           //resourceInfo: 'ResourceInfo',
           //child: 'subtasks', //Não se usa o child, pois os dados são planos (flat)          
           dependency: 'Predecessor' //tem que ser 'dependency'; o da direita é o nome do campo no GanttComponent
