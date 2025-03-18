@@ -49,10 +49,19 @@ const tasksWithId = tasks.map((task: any, index: number) => ({
     parentId: task.parentId,
     Predecessor: task.predecessor,    
     notes: task.notes,
-    Resources: task.resources.map((resource: any) => resource.id) // Map resource IDs
+    //Resources: resources.map((resource: any) => resource.resourceName) // Map resource IDs
   }));
+
+  // Map resources to match the GanttComponent's resourceFields
+  const formattedResources = resources.map((resource: any) => ({
+    id: resource.id,
+    resourceName: resource.resourceName,
+    resourceRole: resource.resourceRole,
+  }));
+
   console.log("tarefas FORMATADAS", tasksWithId);
-return ({ tasks: tasksWithId, resources });
+  console.log("Recursos formatados:", formattedResources);
+return ({ tasks: tasksWithId, resources: formattedResources });
 };
 
 export default function GanttRoute() {  
@@ -63,17 +72,20 @@ export default function GanttRoute() {
     console.log("Não há tarefas para exibir");
     };
 
-//função para o botão de salvar
+  const deletedTasks: any[] = []; // Track deleted tasks globally or in a state
+  //função para o botão de salvar
 	const handleSaveButton = async () => {    
 		const ganttInstance = ganttRef.current;
 		const updatedData = ganttInstance?.dataSource;
+
 		console.log('Dados para salvar:', updatedData);
+    console.log('Tarefas excluídas:', deletedTasks);
 		
 		await fetch("/api/save-tasks", {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify(updatedData),
-	  });
+		body: JSON.stringify({ updatedData, deletedTasks }), // Send both updated and deleted tasks
+  });
   }
 
   
@@ -94,6 +106,10 @@ export default function GanttRoute() {
     if (args) {
       console.log("Ação completada!! (=================args completo=============):", args);
     }
+    if (args.requestType === 'delete') {
+      deletedTasks.push(...args.data); // Add deleted tasks to the array
+      console.log('Tarefas excluídas:', deletedTasks);
+    }  
   }
 
   
@@ -109,7 +125,8 @@ export default function GanttRoute() {
       <GanttComponent
         ref={ganttRef}
         id='Default'
-        //dataSource={tasks} //tem que mapear os campos primeiro
+        dataSource={tasks} //tem que mapear os campos primeiro
+        resources={resources} //relaciona aqui os recursos
         actionComplete={handleActionComplete}
 
         //resourceFields: define o mapa de campos para os recursos
@@ -128,10 +145,8 @@ export default function GanttRoute() {
           duration: 'Duration',
           progress: 'Progress',
           parentID: 'parentId', //esse é a relação para dados flat 
-          notes: 'Notes',
-          //ainda não tenho coluna para o 'Resources'
-          resourceInfo: 'Resources',
-          //resourceInfo: 'ResourceInfo',
+          notes: 'Notes',          
+          resourceInfo: 'Resources',          
           //child: 'subtasks', //Não se usa o child, pois os dados são planos (flat)          
           dependency: 'Predecessor' //tem que ser 'dependency'; o da direita é o nome do campo no GanttComponent
         }}
