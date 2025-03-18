@@ -23,16 +23,23 @@ model Tasks {
   notes                       String?  
   progress                    Float? @default(0.0)
   predecessor                 String?
-  resources                   TaskResource[]  
+  taskResources           TaskResourceAssignment[]
   
   @@index([parentId], name: "parentId")  
 }
 
 model TaskResource {
   id           Int     @id() @default(autoincrement())
-  taskId       Int?
   resourceName String
   resourceRole String?
-  task         Tasks?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskAssignments TaskResourceAssignment[]
+}
 
+model TaskResourceAssignment {
+  taskId Int
+  task   Tasks @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskResourceId Int
+  taskResource TaskResource @relation(fields: [taskResourceId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, taskResourceId])
 }

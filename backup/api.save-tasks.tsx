@@ -59,69 +59,30 @@ export const action: ActionFunction = async ({ request }) => {
     // Processa cada tarefa para atualizar ou inserir no banco
     //for (const task of tasks) {
       for (const task of updatedData) {
-      // await prisma.tasks.upsert({
-      //   where: { id: task.TaskID },
-      //   update: {
-      //     taskName: task.taskName,
-      //     startDate: new Date(task.StartDate),
-      //     endDate: new Date(task.EndDate),
-      //     duration: task.Duration,
-      //     progress: task.Progress || 0,
-      //     predecessor: task.Predecessor,
-      //     parentId: task.parentId || undefined,
-      //   },
-      //   create: {
-      //     id: task.TaskID,
-      //     taskName: task.taskName,
-      //     startDate: new Date(task.StartDate),
-      //     endDate: new Date(task.EndDate),
-      //     duration: task.Duration,
-      //     progress: task.Progress || 0,
-      //     predecessor: task.Predecessor,
-      //     parentId: task.parentId || undefined,
-      //   },
-      // });
-      // Criação ou atualização da tarefa na tabela 'tasks'
-        const upsertedTask = await prisma.tasks.upsert({
-          where: { id: task.TaskID },
-          update: {
-              taskName: task.taskName,
-              startDate: new Date(task.StartDate),
-              endDate: new Date(task.EndDate),
-              duration: task.Duration,
-              progress: task.Progress || 0,
-              predecessor: task.Predecessor,
-              parentId: task.parentId || undefined,
-              taskResources: task.Resources, //com Resources deu certo, apareceu o recurso inteiro na tarefa
-              notes: task.notes,
-          },
-          create: {
-              taskName: task.taskName,
-              startDate: new Date(task.StartDate),
-              endDate: new Date(task.EndDate),
-              duration: task.Duration,
-              progress: task.Progress || 0,
-              predecessor: task.Predecessor,
-              parentId: task.parentId || undefined,
-              taskResources: task.Resources, //com Resources deu certo, apareceu o recurso inteiro na tarefa na hora de inserir, 
-              //mas aparece tudo em dict, e não só o id do recurso
-              notes: task.notes,
-          },
-  });
-      //exibir o conteúdo do task.resources
-      console.log("=================Relação de recursos associados à tarefa:", task.resources);
-      // Assumindo que 'task.resources' contém o ID dos recursos associados à tarefa
-      for (const resourceId of task.Resources) {
-          await prisma.taskResourceAssignment.upsert({
-              where: { taskId_taskResourceId: { taskId: upsertedTask.id, taskResourceId: resourceId } },
-              update: {},
-              create: {
-                  taskId: upsertedTask.id,
-                  taskResourceId: resourceId,
-              },
-          });
-      }
-    }        
+      await prisma.tasks.upsert({
+        where: { id: task.TaskID },
+        update: {
+          taskName: task.taskName,
+          startDate: new Date(task.StartDate),
+          endDate: new Date(task.EndDate),
+          duration: task.Duration,
+          progress: task.Progress || 0,
+          predecessor: task.Predecessor,
+          parentId: task.parentId || undefined,
+        },
+        create: {
+          id: task.TaskID,
+          taskName: task.taskName,
+          startDate: new Date(task.StartDate),
+          endDate: new Date(task.EndDate),
+          duration: task.Duration,
+          progress: task.Progress || 0,
+          predecessor: task.Predecessor,
+          parentId: task.parentId || undefined,
+        },
+      });
+    }
+   
     return json({ success: true });
   } catch (error) {
     console.error("Erro ao salvar os dados:", error);
@@ -149,7 +110,7 @@ export const loader: LoaderFunction = async ({ request }) => {
           parentId: task.parentId,
           Predecessor: task.predecessor,    
           notes: task.notes,
-          Resources: resources.map((resource: any) => resource.resourceName) // Map resource IDs
+          //Resources: resources.map((resource: any) => resource.resourceName) // Map resource IDs
         }));
       
         // Map resources to match the GanttComponent's resourceFields

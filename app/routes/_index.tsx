@@ -35,7 +35,7 @@ export async function loader() {
   const tasks = await getTasks();
   const resources = await getResources();
   //return { tasks, resources };
-  console.log("Recursos encontrados:", resources);
+  //console.log("Recursos encontrados:", resources); //devolve uma lista/array de recursos (dicts), com todos os campos id, resourceName, resourceRole
 
 //depois tem que mapear os campos
 //mapear cada campo da tarefa para um objeto
@@ -49,7 +49,9 @@ const tasksWithId = tasks.map((task: any, index: number) => ({
     parentId: task.parentId,
     Predecessor: task.predecessor,    
     notes: task.notes,
-    //Resources: resources.map((resource: any) => resource.resourceName) // Map resource IDs
+    //Resources: resources.map((resource: any) => resource.id) // Map resource IDs, mas aparece todos os recursos em cada tarefa, e é o que é passado para a API
+    //Resources: resources.map((resource: any) => resource.id) //não achei esse campo na documentação ainda
+    Resources: task.resources,
   }));
 
   // Map resources to match the GanttComponent's resourceFields
@@ -60,7 +62,7 @@ const tasksWithId = tasks.map((task: any, index: number) => ({
   }));
 
   console.log("tarefas FORMATADAS", tasksWithId);
-  console.log("Recursos formatados:", formattedResources);
+  console.log("Recursos formatados:", formattedResources); //devolve uma lista/array de recursos (dicts), com todos os campos id, resourceName, resourceRole
 return ({ tasks: tasksWithId, resources: formattedResources });
 };
 
@@ -126,14 +128,14 @@ export default function GanttRoute() {
         ref={ganttRef}
         id='Default'
         dataSource={tasks} //tem que mapear os campos primeiro
-        resources={resources} //relaciona aqui os recursos
+        resources={resources} //relaciona aqui os recursos que aparecem no campo de recursos do ganttcomponent, senão fica vazio
         actionComplete={handleActionComplete}
 
         //resourceFields: define o mapa de campos para os recursos
         resourceFields={{
           id: 'id',
           name: 'resourceName',
-          unit: 'resourceRole'
+          unit: 'resourceRole',
         }}
 
         //taskFields: define o mapa de campos para as tarefas
@@ -146,7 +148,10 @@ export default function GanttRoute() {
           progress: 'Progress',
           parentID: 'parentId', //esse é a relação para dados flat 
           notes: 'Notes',          
-          resourceInfo: 'Resources',          
+          resourceInfo: 'Resources', //resourceInfo precisa ter para aparecer na caixa de diálogo, senão nem aparece. 
+          //resourceInfo:'Resources' aparece todos os recursos selecionados para a tarefa
+          //resourceInfo: 'resource' aparece os recursos selecionados para a tarefa, mas nenhum selecionado ?
+          //parece que tem ser o mesmo  valor colocado em ColumnDirective (mas eu não coloquei)
           //child: 'subtasks', //Não se usa o child, pois os dados são planos (flat)          
           dependency: 'Predecessor' //tem que ser 'dependency'; o da direita é o nome do campo no GanttComponent
         }}
