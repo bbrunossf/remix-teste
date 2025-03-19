@@ -135,7 +135,8 @@ export default function GanttRoute() {
         resources={resources} //relaciona aqui os recursos que aparecem no campo de recursos do ganttcomponent, senão fica vazio
         actionComplete={handleActionComplete}
 
-        resourceIDMapping='id'  
+        resourceIDMapping='id'
+        //viewType='ResourceView' //fica muito feio, agrupado por recursos
 
         //resourceFields: define o mapa de campos para os recursos
         resourceFields={{

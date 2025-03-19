@@ -114,7 +114,7 @@ export const action: ActionFunction = async ({ request }) => {
       for (const resourceId of task.Resources) {
           await prisma.taskResourceAssignment.upsert({
               where: { taskId_taskResourceId: { taskId: upsertedTask.id, taskResourceId: resourceId.id } },
-              update: {},
+              update: {}, //retirar um recurso da tarefa não é update, é deletar a linha na tabela de associação
               create: {
                   taskId: upsertedTask.id,
                   taskResourceId: resourceId.id,
