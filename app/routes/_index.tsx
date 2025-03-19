@@ -26,7 +26,7 @@ import { ColumnsDirective, ColumnDirective, Inject, Selection, AddDialogFieldsDi
 import { Edit, Toolbar, ToolbarItem } from '@syncfusion/ej2-react-gantt';
 import { DayMarkers, ContextMenu, Reorder, ColumnMenu, Filter, Sort } from '@syncfusion/ej2-react-gantt';
 
-import { getTasks, getResources } from "~/utils/tasks";
+import { getTasks, getResources, getUsedResources } from "~/utils/tasks";
 
 //Ver como mapear os recursos e mostrar eles no campo de recursos do ganttcomponent
 //Mudar a API para lidar com as solicitações
@@ -34,8 +34,10 @@ import { getTasks, getResources } from "~/utils/tasks";
 export async function loader() {
   const tasks = await getTasks();
   const resources = await getResources();
+  const usedResources = await getUsedResources();
   //return { tasks, resources };
   //console.log("Recursos encontrados:", resources); //devolve uma lista/array de recursos (dicts), com todos os campos id, resourceName, resourceRole
+  console.log("Recursos usados:", JSON.stringify(usedResources)); //devolve uma lista/array de recursos (dicts), com todos os campos id, resourceName, resourceRole
 
 //depois tem que mapear os campos
 //mapear cada campo da tarefa para um objeto
@@ -51,9 +53,11 @@ const tasksWithId = tasks.map((task: any, index: number) => ({
     notes: task.notes,
     //Resources: resources.map((resource: any) => resource.id) // Map resource IDs, mas aparece todos os recursos em cada tarefa, e é o que é passado para a API
     //Resources: resources.map((resource: any) => resource.id) //não achei esse campo na documentação ainda
-    Resources: task.resources,
+    //Resources: task.taskResources    
+    //Resources: resources.map((resource: any) => resource.resourceName)
+    Resources: usedResources[index].taskResources.map((resource: any) => resource.taskResourceId)
   }));
-
+  
   // Map resources to match the GanttComponent's resourceFields
   const formattedResources = resources.map((resource: any) => ({
     id: resource.id,
@@ -62,7 +66,7 @@ const tasksWithId = tasks.map((task: any, index: number) => ({
   }));
 
   console.log("tarefas FORMATADAS", tasksWithId);
-  console.log("Recursos formatados:", formattedResources); //devolve uma lista/array de recursos (dicts), com todos os campos id, resourceName, resourceRole
+  //console.log("Recursos formatados:", formattedResources); //devolve uma lista/array de recursos (dicts), com todos os campos id, resourceName, resourceRole
 return ({ tasks: tasksWithId, resources: formattedResources });
 };
 
@@ -127,15 +131,18 @@ export default function GanttRoute() {
       <GanttComponent
         ref={ganttRef}
         id='Default'
-        dataSource={tasks} //tem que mapear os campos primeiro
+        dataSource={tasks} //com os campos mapeados
         resources={resources} //relaciona aqui os recursos que aparecem no campo de recursos do ganttcomponent, senão fica vazio
         actionComplete={handleActionComplete}
+
+        resourceIDMapping='id'  
 
         //resourceFields: define o mapa de campos para os recursos
         resourceFields={{
           id: 'id',
           name: 'resourceName',
-          unit: 'resourceRole',
+          group: 'resourceRole',
+          //não tenho um campo para Unit na tabela no banco de dados
         }}
 
         //taskFields: define o mapa de campos para as tarefas
@@ -147,7 +154,7 @@ export default function GanttRoute() {
           duration: 'Duration',
           progress: 'Progress',
           parentID: 'parentId', //esse é a relação para dados flat 
-          notes: 'Notes',          
+          notes: 'notes',          
           resourceInfo: 'Resources', //resourceInfo precisa ter para aparecer na caixa de diálogo, senão nem aparece. 
           //resourceInfo:'Resources' aparece todos os recursos selecionados para a tarefa
           //resourceInfo: 'resource' aparece os recursos selecionados para a tarefa, mas nenhum selecionado ?

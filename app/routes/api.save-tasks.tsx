@@ -44,7 +44,7 @@ export const action: ActionFunction = async ({ request }) => {
     console.log("Método chamado:", method);
     //console.log("dados raw:", tasks);        
     console.log("Método HTTP:", method);        
-    console.log("URL:", request.url); // detalhes da requisição
+    console.log("URL:", request.url); // detalhes da requisição    
     console.log("Dados recebidos (atualizados):", updatedData);
     console.log("Dados recebidos (excluídos):", deletedTasks);
 
@@ -92,7 +92,7 @@ export const action: ActionFunction = async ({ request }) => {
               progress: task.Progress || 0,
               predecessor: task.Predecessor,
               parentId: task.parentId || undefined,
-              taskResources: task.Resources, //com Resources deu certo, apareceu o recurso inteiro na tarefa
+              taskResources: task.Resources.id, //com Resources deu certo, apareceu o recurso inteiro na tarefa
               notes: task.notes,
           },
           create: {
@@ -103,21 +103,21 @@ export const action: ActionFunction = async ({ request }) => {
               progress: task.Progress || 0,
               predecessor: task.Predecessor,
               parentId: task.parentId || undefined,
-              taskResources: task.Resources, //com Resources deu certo, apareceu o recurso inteiro na tarefa na hora de inserir, 
+              taskResources: task.Resources.id, //com Resources deu certo, apareceu o recurso inteiro na tarefa na hora de inserir, 
               //mas aparece tudo em dict, e não só o id do recurso
               notes: task.notes,
           },
   });
       //exibir o conteúdo do task.resources
-      console.log("=================Relação de recursos associados à tarefa:", task.resources);
+      console.log("=================Relação de recursos associados à tarefa:", task.Resources);
       // Assumindo que 'task.resources' contém o ID dos recursos associados à tarefa
       for (const resourceId of task.Resources) {
           await prisma.taskResourceAssignment.upsert({
-              where: { taskId_taskResourceId: { taskId: upsertedTask.id, taskResourceId: resourceId } },
+              where: { taskId_taskResourceId: { taskId: upsertedTask.id, taskResourceId: resourceId.id } },
               update: {},
               create: {
                   taskId: upsertedTask.id,
-                  taskResourceId: resourceId,
+                  taskResourceId: resourceId.id,
               },
           });
       }

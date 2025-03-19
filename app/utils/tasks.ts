@@ -12,3 +12,14 @@ export async function getResources() {
     orderBy: { id: "asc" },  // Garante a ordenação
   });
 }
+
+export async function getUsedResources() {
+  return await prisma.tasks.findMany({
+    //select: { taskResources: true },
+    select: { 
+      taskResources: {
+        select: {taskResourceId: true}          
+      },
+    }
+  });
+}
