@@ -27,6 +27,9 @@ import { Edit, Toolbar, ToolbarItem } from '@syncfusion/ej2-react-gantt';
 import { DayMarkers, ContextMenu, Reorder, ColumnMenu, Filter, Sort } from '@syncfusion/ej2-react-gantt';
 
 import { getTasks, getResources, getUsedResources } from "~/utils/tasks";
+import { PropertyPane } from '~/utils/propertyPane';
+import { DropDownListComponent } from '@syncfusion/ej2-react-dropdowns';
+
 
 //Ver como mapear os recursos e mostrar eles no campo de recursos do ganttcomponent
 //Mudar a API para lidar com as solicitações
@@ -130,15 +133,32 @@ export default function GanttRoute() {
   }
 
   
+  let filterType: { [key: string]: Object }[] = [
+    { text: 'Shimmer', value: 'Shimmer' },
+    { text: 'Spinner', value: 'Spinner' }
+  ];
+  const onChange = (sel) => {
+    let type: any = sel.value.toString();
+    if (type === "Shimmer") {
+      ganttRef.current.loadingIndicator.indicatorType = "Shimmer";
+      ganttRef.current.enableVirtualMaskRow = true;
+      ganttRef.current.refresh();
+    } else {
+      ganttRef.current.loadingIndicator.indicatorType = "Spinner";
+      ganttRef.current.enableVirtualMaskRow = false;
+      ganttRef.current.refresh();
+    }
+  }
+  const loadingIndicator = {
+    indicatorType: 'Shimmer'
+};
+  
+// incluir variável para receber oe eventos da Agenda e mostrar no PropertyPane
+  
 
   return (
-    <div>
-    <div style={{ margin: '20px' }}>
-      <h1>Gerenciamento de Tarefas</h1>
-      <h1>Gerenciamento de Tarefas</h1>
-      <h1>Gerenciamento de Tarefas</h1>
-      <h1>Gerenciamento de Tarefas</h1>
-      <h1>Gerenciamento de Tarefas</h1>
+    <div className='control-pane'>
+    <div className='col-md-9'>
       <GanttComponent
         ref={ganttRef}
         id='Default'
@@ -156,7 +176,7 @@ export default function GanttRoute() {
           group: 'resourceRole',
           //não tenho um campo para Unit na tabela no banco de dados
         }}
-
+        
         //taskFields: define o mapa de campos para as tarefas
         taskFields={{
           id: 'TaskID',
@@ -208,10 +228,28 @@ export default function GanttRoute() {
 
         <Inject services={[Selection, Edit, Toolbar, DayMarkers, ContextMenu, Reorder, ColumnMenu, Filter, Sort, RowDD]} />
       </GanttComponent>
+    </div>        
+    <div className='col-md-3 property-section'>
+        <PropertyPane title='Properties'>
+          <table id='property' title='Properties' className='property-panel-table' style={{ width: '100%' }}>
+          <tbody>
+            <tr>
+              <td style={{ width: '50%', paddingLeft: 0 }}>
+                <div style={{ paddingTop: '10px', paddingLeft: 0 }}> Indicator Type </div>
+              </td>
+              <td style={{ width: '70%' }}>
+                <div>
+                  <DropDownListComponent width="113px" id="seltype" change={onChange.bind(this)} dataSource={filterType} value="Shimmer"/>
+                </div>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </PropertyPane>
     </div>
         <button onClick={handleSaveButton} className="bg-blue-500 text-white p-2 rounded">
           Salvar Alterações
         </button>
-    </div>
+  </div>
   )
 }
