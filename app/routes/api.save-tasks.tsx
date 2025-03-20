@@ -50,6 +50,12 @@ export const action: ActionFunction = async ({ request }) => {
 
     // Process deleted tasks
     for (const task of deletedTasks) {
+      // Deletar associações de recursos antes de deletar a tarefa
+      await prisma.taskResourceAssignment.deleteMany({
+        where: { taskId: task.TaskID },
+      });
+
+      // Deletar a tarefa
       await prisma.tasks.delete({
         where: { id: task.TaskID },
       });
@@ -91,8 +97,8 @@ export const action: ActionFunction = async ({ request }) => {
               duration: task.Duration,
               progress: task.Progress || 0,
               predecessor: task.Predecessor,
-              parentId: task.parentId || undefined,
-              taskResources: task.Resources.id, //com Resources deu certo, apareceu o recurso inteiro na tarefa
+              parentId: task.parentId !== null ? task.parentId.toString() : null,
+              //taskResources: task.Resources.id, //com Resources deu certo, apareceu o recurso inteiro na tarefa
               notes: task.notes,
           },
           create: {
@@ -102,26 +108,32 @@ export const action: ActionFunction = async ({ request }) => {
               duration: task.Duration,
               progress: task.Progress || 0,
               predecessor: task.Predecessor,
-              parentId: task.parentId || undefined,
-              taskResources: task.Resources.id, //com Resources deu certo, apareceu o recurso inteiro na tarefa na hora de inserir, 
+              parentId: task.parentId !== null ? task.parentId.toString() : null,
+              //taskResources: task.Resources.id, //com Resources deu certo, apareceu o recurso inteiro na tarefa na hora de inserir, 
               //mas aparece tudo em dict, e não só o id do recurso
               notes: task.notes,
           },
   });
-      //exibir o conteúdo do task.resources
-      console.log("=================Relação de recursos associados à tarefa:", task.Resources);
-      // Assumindo que 'task.resources' contém o ID dos recursos associados à tarefa
+      // Atualizar associações de recursos
+      console.log(`Atualizando associações de recursos para a tarefa ID ${upsertedTask.id}`);
+
+      // Remover associações existentes
+      await prisma.taskResourceAssignment.deleteMany({
+        where: { taskId: upsertedTask.id },
+      });
+
+      // Inserir novas associações
       for (const resourceId of task.Resources) {
-          await prisma.taskResourceAssignment.upsert({
-              where: { taskId_taskResourceId: { taskId: upsertedTask.id, taskResourceId: resourceId.id } },
-              update: {}, //retirar um recurso da tarefa não é update, é deletar a linha na tabela de associação
-              create: {
-                  taskId: upsertedTask.id,
-                  taskResourceId: resourceId.id,
-              },
-          });
+        console.log(`Associando recurso ID ${resourceId} à tarefa ID ${upsertedTask.id}`);
+        console.log("Recursos:", task.Resources);
+        await prisma.taskResourceAssignment.create({
+          data: {
+            taskId: upsertedTask.id,
+            taskResourceId: parseInt(resourceId.id),
+          },
+        });
       }
-    }        
+    }
     return json({ success: true });
   } catch (error) {
     console.error("Erro ao salvar os dados:", error);

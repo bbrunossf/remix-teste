@@ -45,7 +45,7 @@ const tasksWithId = tasks.map((task: any, index: number) => ({
   TaskID: task.id,
     taskName: task.taskName,
     StartDate: new Date(task.startDate),//.toISOString().split('T')[0],
-    EndDate: new Date(task.endDate).toISOString().split('T')[0],
+    EndDate: new Date(task.endDate),//.toISOString().split('T')[0],
     Duration: task.duration,
     Progress: task.progress,
     parentId: task.parentId,
@@ -80,19 +80,30 @@ export default function GanttRoute() {
 
   const deletedTasks: any[] = []; // Track deleted tasks globally or in a state
   //função para o botão de salvar
-	const handleSaveButton = async () => {    
-		const ganttInstance = ganttRef.current;
-		const updatedData = ganttInstance?.dataSource;
+	const handleSaveButton = async () => {
+    try {    
+      const ganttInstance = ganttRef.current;
+      const updatedData = ganttInstance?.dataSource;
 
-		console.log('Dados para salvar:', updatedData);
-    console.log('Tarefas excluídas:', deletedTasks);
-		
-		await fetch("/api/save-tasks", {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ updatedData, deletedTasks }), // Send both updated and deleted tasks
-  });
+      console.log('Dados para salvar:', updatedData);
+      console.log('Tarefas excluídas:', deletedTasks);
+      
+      const response = await fetch("/api/save-tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ updatedData, deletedTasks }), // Send both updated and deleted tasks
+    });
+
+    if (response.ok) {
+      alert("Dados salvos com sucesso!"); // Exibe mensagem de sucesso
+    } else {
+      alert("Erro ao salvar os dados. Tente novamente."); // Exibe mensagem de erro
+    }
+  } catch (error) {
+    console.error("Erro ao salvar os dados:", error);
+    alert("Ocorreu um erro ao salvar os dados. Verifique o console para mais detalhes.");
   }
+  };
 
   
   // Configuração do DataManager com WebApiAdaptor
