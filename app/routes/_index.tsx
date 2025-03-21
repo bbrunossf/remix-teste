@@ -67,6 +67,8 @@ import {
 
 import { useState } from 'react';
 import { useFetcher } from "@remix-run/react";
+import { TreeViewComponent } from '@syncfusion/ej2-react-navigations';
+
 
 //Ver como mapear os recursos e mostrar eles no campo de recursos do ganttcomponent
 //Mudar a API para lidar com as solicitações
@@ -406,22 +408,17 @@ export default function GanttRoute() {
 
        <div> {/* PropertyPane, debaixo da Agenda, dentro da mesma coluna 2, mais o botão embaixo */}  
         <PropertyPane title='Recursos'>
-          <table id='property' title='Properties' style={{ width: '100%' }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: 'left', padding: '5px' }}>ID</th>
-                <th style={{ textAlign: 'left', padding: '5px' }}>Nome do Recurso</th>
-              </tr>
-            </thead>
-            <tbody>
-              {resourceData.map((resource: any, index: number) => (
-                <tr key={index}>
-                  <td style={{ padding: '2px' }}>{resource.id}</td>
-                  <td style={{ padding: '2px' }}>{resource.text}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <TreeViewComponent 
+            id="resourceTree"
+            fields={{
+              dataSource: resources,
+              id: 'id',
+              text: 'resourceName',
+              child: 'children'
+            }}
+            //sortOrder="Ascending"
+            cssClass="resource-tree"
+          />
         </PropertyPane>
 
           <button onClick={handleSaveButton} className="bg-blue-500 text-white p-2 rounded">

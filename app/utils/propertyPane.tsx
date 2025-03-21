@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { TreeViewComponent } from '@syncfusion/ej2-react-navigations';
 
 export function PropertyPane({ title, children }) {
   // Estado para controlar onde renderizar baseado na detecção de dispositivo móvel

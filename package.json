@@ -19,6 +19,7 @@
     "@syncfusion/ej2-react-dropdowns": "^28.2.12",
     "@syncfusion/ej2-react-gantt": "^28.2.11",
     "@syncfusion/ej2-react-grids": "^28.2.12",
+    "@syncfusion/ej2-react-navigations": "^28.2.12",
     "@syncfusion/ej2-react-schedule": "^28.2.11",
     "isbot": "^4.1.0",
     "prisma": "^6.5.0",
