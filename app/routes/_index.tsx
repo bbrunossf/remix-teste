@@ -6,6 +6,8 @@ import type { MetaFunction } from "@remix-run/node";
 import { useLoaderData } from '@remix-run/react'
 import { useRef } from 'react';
 
+import '~/custom.css';
+
 import '@syncfusion/ej2-base/styles/material.css';
 import '@syncfusion/ej2-buttons/styles/material.css';
 import '@syncfusion/ej2-calendars/styles/material.css';
@@ -20,6 +22,24 @@ import '@syncfusion/ej2-popups/styles/material.css';
 import '@syncfusion/ej2-splitbuttons/styles/material.css';
 import '@syncfusion/ej2-treegrid/styles/material.css';
 
+import '@syncfusion/ej2-base/styles/material.css';
+import '@syncfusion/ej2-buttons/styles/material.css';
+import '@syncfusion/ej2-calendars/styles/material.css';
+import '@syncfusion/ej2-dropdowns/styles/material.css';
+import '@syncfusion/ej2-inputs/styles/material.css';
+import '@syncfusion/ej2-lists/styles/material.css';
+import '@syncfusion/ej2-navigations/styles/material.css';
+import '@syncfusion/ej2-popups/styles/material.css';
+import '@syncfusion/ej2-react-schedule/styles/material.css';
+import '@syncfusion/ej2-react-grids/styles/material.css';
+
+
+import '@syncfusion/ej2-gantt/styles/material.css';
+import '@syncfusion/ej2-grids/styles/material.css';
+import '@syncfusion/ej2-layouts/styles/material.css';
+import '@syncfusion/ej2-splitbuttons/styles/material.css';
+import '@syncfusion/ej2-treegrid/styles/material.css';
+
 import { GanttComponent } from '@syncfusion/ej2-react-gantt'
 import { DataManager, WebApiAdaptor } from '@syncfusion/ej2-data'
 import { ColumnsDirective, ColumnDirective, Inject, Selection, AddDialogFieldsDirective, AddDialogFieldDirective, RowDD } from '@syncfusion/ej2-react-gantt';
@@ -30,6 +50,19 @@ import { getTasks, getResources, getUsedResources } from "~/utils/tasks";
 import { PropertyPane } from '~/utils/propertyPane';
 import { DropDownListComponent } from '@syncfusion/ej2-react-dropdowns';
 
+import { 
+  ScheduleComponent, 
+  Day,  
+  Month,
+  Week,
+  Agenda,   
+  DragAndDrop,
+  Resize,
+  ViewsDirective,
+  ViewDirective,  
+  TimelineViews, TimelineMonth,
+  ResourcesDirective, ResourceDirective, EventRenderedArgs, renderCell, CellTemplateArgs  
+} from '@syncfusion/ej2-react-schedule';
 
 //Ver como mapear os recursos e mostrar eles no campo de recursos do ganttcomponent
 //Mudar a API para lidar com as solicitações
@@ -132,26 +165,13 @@ export default function GanttRoute() {
     }  
   }
 
+  //map all resources from 'resources' object and list its id and resourceName
+  const resourceData: { [key: string]: Object }[] = resources.map((resource: any) => ({
+    id: resource.id,
+    text: resource.resourceName
+  }));
   
-  let filterType: { [key: string]: Object }[] = [
-    { text: 'Shimmer', value: 'Shimmer' },
-    { text: 'Spinner', value: 'Spinner' }
-  ];
-  const onChange = (sel) => {
-    let type: any = sel.value.toString();
-    if (type === "Shimmer") {
-      ganttRef.current.loadingIndicator.indicatorType = "Shimmer";
-      ganttRef.current.enableVirtualMaskRow = true;
-      ganttRef.current.refresh();
-    } else {
-      ganttRef.current.loadingIndicator.indicatorType = "Spinner";
-      ganttRef.current.enableVirtualMaskRow = false;
-      ganttRef.current.refresh();
-    }
-  }
-  const loadingIndicator = {
-    indicatorType: 'Shimmer'
-};
+  
   
 // incluir variável para receber oe eventos da Agenda e mostrar no PropertyPane
   
@@ -176,6 +196,9 @@ export default function GanttRoute() {
           group: 'resourceRole',
           //não tenho um campo para Unit na tabela no banco de dados
         }}
+
+        //show only 3 columns
+        treeColumnIndex={1}        
         
         //taskFields: define o mapa de campos para as tarefas
         taskFields={{
@@ -183,10 +206,10 @@ export default function GanttRoute() {
           name: 'taskName', //tem que ser name!
           startDate: 'StartDate',
           endDate: 'EndDate',
-          duration: 'Duration',
-          progress: 'Progress',
+          // duration: 'Duration',
+          // progress: 'Progress',
           parentID: 'parentId', //esse é a relação para dados flat 
-          notes: 'notes',          
+          //notes: 'notes',          
           resourceInfo: 'Resources', //resourceInfo precisa ter para aparecer na caixa de diálogo, senão nem aparece. 
           //resourceInfo:'Resources' aparece todos os recursos selecionados para a tarefa
           //resourceInfo: 'resource' aparece os recursos selecionados para a tarefa, mas nenhum selecionado ?
@@ -229,27 +252,51 @@ export default function GanttRoute() {
         <Inject services={[Selection, Edit, Toolbar, DayMarkers, ContextMenu, Reorder, ColumnMenu, Filter, Sort, RowDD]} />
       </GanttComponent>
     </div>        
-    <div className='col-md-3 property-section'>
+    <div className='property-section'>
         <PropertyPane title='Properties'>
           <table id='property' title='Properties' className='property-panel-table' style={{ width: '100%' }}>
-          <tbody>
-            <tr>
-              <td style={{ width: '50%', paddingLeft: 0 }}>
-                <div style={{ paddingTop: '10px', paddingLeft: 0 }}> Indicator Type </div>
-              </td>
-              <td style={{ width: '70%' }}>
-                <div>
-                  <DropDownListComponent width="113px" id="seltype" change={onChange.bind(this)} dataSource={filterType} value="Shimmer"/>
-                </div>
-              </td>
-            </tr>
-            </tbody>
+          <thead>
+        <tr>
+          <th style={{ textAlign: 'left', padding: '5px' }}>ID</th>
+          <th style={{ textAlign: 'left', padding: '5px' }}>Resource Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        {resourceData.map((resource: any, index: number) => (
+          <tr key={index}>
+            <td style={{ padding: '5px' }}>{resource.id}</td>
+            <td style={{ padding: '5px' }}>{resource.text}</td>
+          </tr>
+        ))}
+      </tbody>
           </table>
         </PropertyPane>
     </div>
         <button onClick={handleSaveButton} className="bg-blue-500 text-white p-2 rounded">
           Salvar Alterações
         </button>
+    <div className='col-md-9'>
+    <ScheduleComponent
+      width='70%'
+      height='350px'
+      selectedDate={new Date()}
+      currentView='Agenda'   
+      // eventSettings={{
+      //   dataSource: tasks,
+      //   fields: {
+      //     id: 'TaskID',
+      //     subject: 'taskName',
+      //     startTime: 'StartDate',
+      //     endTime: 'EndDate',
+      //     description: 'notes',
+      //     resourceId: 'Resources'
+      //   }
+      // }}
+      // group={{ resources: ['Resources'] }}      
+      > 
+      <Inject services={[Day, Month, Week, Agenda, TimelineMonth, TimelineViews, DragAndDrop, Resize]} />
+      </ScheduleComponent>
+    </div>
   </div>
   )
 }

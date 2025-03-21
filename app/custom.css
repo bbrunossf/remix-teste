@@ -1,0 +1,33 @@
+.control-pane {
+    display: flex; /* Define o layout como flexbox */
+    flex-direction: row; /* Organiza os itens em linha */
+    justify-content: space-between; /* Espaçamento uniforme entre os itens */
+    align-items: flex-start; /* Alinha os itens ao topo */
+    gap: 2px; /* Espaçamento entre os componentes */
+  }
+  
+  .col-md-9 {
+    flex: 2; /* O GanttComponent e o ScheduleComponent ocupam mais espaço */
+  }
+  
+  .property-section {
+    flex: 3; /* A tabela de propriedades ocupa menos espaço */
+    max-width: 800px; /* Limita a largura da tabela */
+    overflow-y: auto; /* Adiciona rolagem vertical, se necessário */
+  }
+  
+  table.property-panel-table {
+    width: 100%; /* Faz a tabela ocupar toda a largura disponível */
+    border-collapse: collapse; /* Remove espaços entre as bordas */
+  }
+  
+  table.property-panel-table th,
+  table.property-panel-table td {
+    border: 1px solid #050505; /* Adiciona bordas às células */    
+    text-align: left; /* Alinha o texto à esquerda */
+  }
+  
+  table.property-panel-table th {
+    background-color: #f4f4f4; /* Cor de fundo para o cabeçalho */
+    font-weight: bold; /* Texto em negrito */
+  }
