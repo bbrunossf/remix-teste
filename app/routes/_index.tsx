@@ -64,6 +64,10 @@ import {
   ResourcesDirective, ResourceDirective, EventRenderedArgs, renderCell, CellTemplateArgs  
 } from '@syncfusion/ej2-react-schedule';
 
+
+import { useState } from 'react';
+import { useFetcher } from "@remix-run/react";
+
 //Ver como mapear os recursos e mostrar eles no campo de recursos do ganttcomponent
 //Mudar a API para lidar com as solicitações
 
@@ -123,6 +127,8 @@ return ({ tasks: tasksWithId, resources: formattedResources, eventos: formattedE
 export default function GanttRoute() {  
   const ganttRef = useRef<GanttComponent>(null);
   const {tasks, resources, eventos} = useLoaderData<typeof loader>();
+  const [showPasteModal, setShowPasteModal] = useState(false); // Estado para controlar o modal
+  const [pasteData, setPasteData] = useState(''); // Estado para armazenar os dados colados
   
   if (tasks.length === 0) {
     console.log("Não há tarefas para exibir");
@@ -184,6 +190,62 @@ export default function GanttRoute() {
     id: resource.id,
     text: resource.resourceName
   }));
+
+  // Função para processar os dados colados e criar novas tarefas
+  const processPastedData = (data: string) => {
+    const rows = data.split('\n');
+    rows.forEach((row) => {
+      if (row.trim() !== '') {
+        const newTask = {
+          TaskID: tasks.length + 1,
+          taskName: row.trim(),
+          StartDate: new Date(),//.toISOString().split('T')[0],
+          // Set EndDate as one day after StartDate. Não pode usar StartDate como variável
+          EndDate: new Date(new Date().getTime() + 24 * 60 * 60 * 1000),//.toISOString().split('T')[0],          
+          //EndDate: new Date(),//.toISOString().split('T')[0],
+          Duration: 1,
+          Progress: 0,
+        };
+        ganttRef.current?.addRecord(newTask);
+      }
+    });
+  };
+
+  // Função para abrir o modal de colagem
+  const handleOpenPasteModal = () => {
+    setShowPasteModal(true);
+  };
+
+  // Função para fechar o modal e processar os dados colados
+  const handlePasteSubmit = () => {
+    processPastedData(pasteData);
+    setShowPasteModal(false);
+    setPasteData('');
+  };
+
+  // Função para cancelar o modal
+  const handlePasteCancel = () => {
+    setShowPasteModal(false);
+    setPasteData('');
+  };
+
+  // Botão customizado para a toolbar
+  // toolbar={['Add', 'Edit', 'Update', 'Delete', 'Cancel', 'Indent', 'Outdent', 
+            //   'ZoomIn', 'ZoomOut', 'ExpandAll', 'CollapseAll']}
+  const customToolbarItems: any[] = [
+    'Add', 'Edit', 'Update', 'Delete', 'Cancel', 'Indent', 'Outdent', 
+    'ZoomIn', 'ZoomOut',
+    { text: 'Colar Tarefas', tooltipText: 'Colar Tarefas', id: 'pasteTasks' },
+  ];
+
+  // Função para lidar com cliques na toolbar
+  const handleToolbarClick = (args: any) => {
+    if (args.item.id === 'pasteTasks') {
+      handleOpenPasteModal();
+    }
+  }
+
+  
   
   
   
@@ -216,7 +278,10 @@ export default function GanttRoute() {
           }}
 
           //show only 3 columns
-          treeColumnIndex={1}
+          splitterSettings={{
+            columnIndex: 3,
+          }}
+          //treeColumnIndex={1}
           projectStartDate={new Date(2025,1,1)}
           projectEndDate={new Date(2025,8,30)}        
           
@@ -256,7 +321,10 @@ export default function GanttRoute() {
             allowTaskbarEditing: true
           }}
 
-          toolbar={['Add', 'Edit', 'Update', 'Delete', 'Cancel', 'Indent', 'Outdent']}
+          toolbar={customToolbarItems} 
+          toolbarClick={handleToolbarClick}
+
+          //toolbar={['Add', 'Edit', 'Update', 'Delete', 'Cancel', 'Indent', 'Outdent']}
           height="650px"
         >
           {/* campos a serem exibidos na caixa de diálogo de Adicionar. Se não declarar aqui, e não tiver campo para tal, não aparece.
@@ -271,7 +339,27 @@ export default function GanttRoute() {
 
           <Inject services={[Selection, Edit, Toolbar, DayMarkers, ContextMenu, Reorder, ColumnMenu, Filter, Sort, RowDD]} />
         </GanttComponent>
-      </div>    
+      </div>
+
+      {/* Modal para colar tarefas */}
+    {showPasteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-4 rounded">
+            <textarea
+              value={pasteData}
+              onChange={(e) => setPasteData(e.target.value)}
+              placeholder="Cole os nomes das tarefas aqui (um por linha)..."
+              className="w-full h-24 border p-2"
+            />
+            <button onClick={handlePasteSubmit} className="bg-blue-500 text-white p-2 rounded mt-2">
+              Adicionar Tarefas
+            </button>
+            <button onClick={handlePasteCancel} className="bg-gray-500 text-white p-2 rounded mt-2 ml-2">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}      
 
     {/*         
     */}
