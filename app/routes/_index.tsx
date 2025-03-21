@@ -6,7 +6,7 @@ import type { MetaFunction } from "@remix-run/node";
 import { useLoaderData } from '@remix-run/react'
 import { useRef } from 'react';
 
-import '~/custom.css';
+//import '~/custom.css';
 
 import '@syncfusion/ej2-base/styles/material.css';
 import '@syncfusion/ej2-buttons/styles/material.css';
@@ -46,7 +46,7 @@ import { ColumnsDirective, ColumnDirective, Inject, Selection, AddDialogFieldsDi
 import { Edit, Toolbar, ToolbarItem } from '@syncfusion/ej2-react-gantt';
 import { DayMarkers, ContextMenu, Reorder, ColumnMenu, Filter, Sort } from '@syncfusion/ej2-react-gantt';
 
-import { getTasks, getResources, getUsedResources } from "~/utils/tasks";
+import { getTasks, getResources, getUsedResources, getEvents } from "~/utils/tasks";
 import { PropertyPane } from '~/utils/propertyPane';
 import { DropDownListComponent } from '@syncfusion/ej2-react-dropdowns';
 
@@ -71,6 +71,7 @@ export async function loader() {
   const tasks = await getTasks();
   const resources = await getResources();
   const usedResources = await getUsedResources();
+  const eventos = await getEvents(); //arrumar depois as datas para poder usar o findMany
   //return { tasks, resources };
   //console.log("Recursos encontrados:", resources); //devolve uma lista/array de recursos (dicts), com todos os campos id, resourceName, resourceRole
   console.log("Recursos usados:", JSON.stringify(usedResources)); //devolve uma lista/array de recursos (dicts), com todos os campos id, resourceName, resourceRole
@@ -101,14 +102,27 @@ const tasksWithId = tasks.map((task: any, index: number) => ({
     resourceRole: resource.resourceRole,
   }));
 
-  console.log("tarefas FORMATADAS", tasksWithId);
+  const formattedEventos = eventos.map(evento => ({
+    Id: evento.id,
+    Subject: evento.titulo,
+    Description: evento.descricao,
+    StartTime: new Date(evento.data_hora_inicial),
+    EndTime: new Date(evento.data_hora_final),
+    IsAllDay: evento.dia_inteiro,        
+    ObraId: evento.id_obra,  // campo personalizado para o código da obra
+    entregue: evento.entregue,        
+    entregue_em: evento.entregue_em,        
+  }));  
+
+  //console.log("tarefas FORMATADAS", tasksWithId);
+  console.log("Eventos encontrados:", formattedEventos);
   //console.log("Recursos formatados:", formattedResources); //devolve uma lista/array de recursos (dicts), com todos os campos id, resourceName, resourceRole
-return ({ tasks: tasksWithId, resources: formattedResources });
+return ({ tasks: tasksWithId, resources: formattedResources, eventos: formattedEventos });
 };
 
 export default function GanttRoute() {  
   const ganttRef = useRef<GanttComponent>(null);
-  const {tasks, resources} = useLoaderData<typeof loader>();
+  const {tasks, resources, eventos} = useLoaderData<typeof loader>();
   
   if (tasks.length === 0) {
     console.log("Não há tarefas para exibir");
@@ -177,126 +191,159 @@ export default function GanttRoute() {
   
 
   return (
-    <div className='control-pane'>
-    <div className='col-md-9'>
-      <GanttComponent
-        ref={ganttRef}
-        id='Default'
-        dataSource={tasks} //com os campos mapeados
-        resources={resources} //relaciona aqui os recursos que aparecem no campo de recursos do ganttcomponent, senão fica vazio
-        actionComplete={handleActionComplete}
+    //<div className='flex flex-col'> {/* Container pai para empilhar verticalmente */}
+    <div className='flex'> {/* Container pai para a linha principal */}
 
-        resourceIDMapping='id'
-        //viewType='ResourceView' //fica muito feio, agrupado por recursos
+      <div className='w-3/4 pr-4'> {/* Coluna 1: Gantt (ocupa 3/4 da largura) */}
+        {/* <div className='flex'>  Container para Gantt e Botão */}
+        {/*  <div className='w-3/4'>  GanttComponent ocupa 3/4 da largura */}    
+        <GanttComponent
+          ref={ganttRef}
+          id='Default'
+          dataSource={tasks} //com os campos mapeados
+          resources={resources} //relaciona aqui os recursos que aparecem no campo de recursos do ganttcomponent, senão fica vazio
+          actionComplete={handleActionComplete}
 
-        //resourceFields: define o mapa de campos para os recursos
-        resourceFields={{
-          id: 'id',
-          name: 'resourceName',
-          group: 'resourceRole',
-          //não tenho um campo para Unit na tabela no banco de dados
-        }}
+          resourceIDMapping='id'
+          //viewType='ResourceView' //fica muito feio, agrupado por recursos
 
-        //show only 3 columns
-        treeColumnIndex={1}        
-        
-        //taskFields: define o mapa de campos para as tarefas
-        taskFields={{
-          id: 'TaskID',
-          name: 'taskName', //tem que ser name!
-          startDate: 'StartDate',
-          endDate: 'EndDate',
-          // duration: 'Duration',
-          // progress: 'Progress',
-          parentID: 'parentId', //esse é a relação para dados flat 
-          //notes: 'notes',          
-          resourceInfo: 'Resources', //resourceInfo precisa ter para aparecer na caixa de diálogo, senão nem aparece. 
-          //resourceInfo:'Resources' aparece todos os recursos selecionados para a tarefa
-          //resourceInfo: 'resource' aparece os recursos selecionados para a tarefa, mas nenhum selecionado ?
-          //parece que tem ser o mesmo  valor colocado em ColumnDirective (mas eu não coloquei)
-          //child: 'subtasks', //Não se usa o child, pois os dados são planos (flat)          
-          dependency: 'Predecessor' //tem que ser 'dependency'; o da direita é o nome do campo no GanttComponent
-        }}
+          //resourceFields: define o mapa de campos para os recursos
+          resourceFields={{
+            id: 'id',
+            name: 'resourceName',
+            group: 'resourceRole',
+            //não tenho um campo para Unit na tabela no banco de dados
+          }}
 
-        allowSelection={true}
-        allowSorting={true} //classificar/ordenar as LINHAS ao clicar nos cabeçalhos das COLUNAS
-        allowResizing={true} //redimensionar as COLUNAS
-        allowReordering={true} //reordenar as COLUNAS
-        allowRowDragAndDrop={true} //arrastar e soltar LINHAS
-        allowTaskbarDragAndDrop={true} //arrastar e soltar TAREFAS
-        enableContextMenu={true}
+          //show only 3 columns
+          treeColumnIndex={1}
+          projectStartDate={new Date(2025,1,1)}
+          projectEndDate={new Date(2025,8,30)}        
+          
+          //taskFields: define o mapa de campos para as tarefas
+          taskFields={{
+            id: 'TaskID',
+            name: 'taskName', //tem que ser name!
+            startDate: 'StartDate',
+            endDate: 'EndDate',
+            // duration: 'Duration',
+            // progress: 'Progress',
+            parentID: 'parentId', //esse é a relação para dados flat 
+            //notes: 'notes',          
+            resourceInfo: 'Resources', //resourceInfo precisa ter para aparecer na caixa de diálogo, senão nem aparece. 
+            //resourceInfo:'Resources' aparece todos os recursos selecionados para a tarefa
+            //resourceInfo: 'resource' aparece os recursos selecionados para a tarefa, mas nenhum selecionado ?
+            //parece que tem ser o mesmo  valor colocado em ColumnDirective (mas eu não coloquei)
+            //child: 'subtasks', //Não se usa o child, pois os dados são planos (flat)          
+            dependency: 'Predecessor' //tem que ser 'dependency'; o da direita é o nome do campo no GanttComponent
+          }}
 
-        //editSettings são relacionadas a alterações nas tarefas
-        editSettings={{
-          allowAdding: true,
-          allowEditing: true,
-          allowDeleting: true,
-          //habilitar a caixa de confirmação para excluir
-          showDeleteConfirmDialog: true,
-          allowTaskbarEditing: true
-        }}
+          allowSelection={true}
+          allowSorting={true} //classificar/ordenar as LINHAS ao clicar nos cabeçalhos das COLUNAS
+          allowResizing={true} //redimensionar as COLUNAS
+          allowReordering={true} //reordenar as COLUNAS
+          allowRowDragAndDrop={true} //arrastar e soltar LINHAS
+          allowTaskbarDragAndDrop={true} //arrastar e soltar TAREFAS
+          enableContextMenu={true}
 
-        toolbar={['Add', 'Edit', 'Update', 'Delete', 'Cancel', 'Indent', 'Outdent']}
-        height="650px"
-      >
-        {/* campos a serem exibidos na caixa de diálogo de Adicionar. Se não declarar aqui, e não tiver campo para tal, não aparece.
-    Se não for especificado, os campos derivam dos valores de 'taskSettings' e 'columns'*/}
-        <AddDialogFieldsDirective>
-          <AddDialogFieldDirective type='General' headerText='General'></AddDialogFieldDirective>
-          <AddDialogFieldDirective type='Dependency'></AddDialogFieldDirective>
-          <AddDialogFieldDirective type='Resources'></AddDialogFieldDirective> {/* ainda não tenho coluna para o 'Resources', então não aparece, mesmo colocando aqui */}
-          <AddDialogFieldDirective type='Notes'></AddDialogFieldDirective>
-        </AddDialogFieldsDirective>
+          //editSettings são relacionadas a alterações nas tarefas
+          editSettings={{
+            allowAdding: true,
+            allowEditing: true,
+            allowDeleting: true,
+            //habilitar a caixa de confirmação para excluir
+            showDeleteConfirmDialog: true,
+            allowTaskbarEditing: true
+          }}
+
+          toolbar={['Add', 'Edit', 'Update', 'Delete', 'Cancel', 'Indent', 'Outdent']}
+          height="650px"
+        >
+          {/* campos a serem exibidos na caixa de diálogo de Adicionar. Se não declarar aqui, e não tiver campo para tal, não aparece.
+      Se não for especificado, os campos derivam dos valores de 'taskSettings' e 'columns'*/}
+          <AddDialogFieldsDirective>
+            <AddDialogFieldDirective type='General' headerText='General'></AddDialogFieldDirective>
+            <AddDialogFieldDirective type='Dependency'></AddDialogFieldDirective>
+            <AddDialogFieldDirective type='Resources'></AddDialogFieldDirective> {/* ainda não tenho coluna para o 'Resources', então não aparece, mesmo colocando aqui */}
+            <AddDialogFieldDirective type='Notes'></AddDialogFieldDirective>
+          </AddDialogFieldsDirective>
 
 
-        <Inject services={[Selection, Edit, Toolbar, DayMarkers, ContextMenu, Reorder, ColumnMenu, Filter, Sort, RowDD]} />
-      </GanttComponent>
-    </div>        
-    <div className='property-section'>
-        <PropertyPane title='Properties'>
-          <table id='property' title='Properties' className='property-panel-table' style={{ width: '100%' }}>
-          <thead>
-        <tr>
-          <th style={{ textAlign: 'left', padding: '5px' }}>ID</th>
-          <th style={{ textAlign: 'left', padding: '5px' }}>Resource Name</th>
-        </tr>
-      </thead>
-      <tbody>
-        {resourceData.map((resource: any, index: number) => (
-          <tr key={index}>
-            <td style={{ padding: '5px' }}>{resource.id}</td>
-            <td style={{ padding: '5px' }}>{resource.text}</td>
-          </tr>
-        ))}
-      </tbody>
+          <Inject services={[Selection, Edit, Toolbar, DayMarkers, ContextMenu, Reorder, ColumnMenu, Filter, Sort, RowDD]} />
+        </GanttComponent>
+      </div>    
+
+    {/*         
+    */}
+
+      {/* <div className='w-1/4'>  Agenda ocupa 1/4 da largura */}
+      <div className='w-1/4 flex flex-col'> {/* Coluna 2: Schedule, PropertyPane e Botão (ocupa 1/4 da largura, dispostos em coluna, ou seja, um abaixo do outro) */}
+
+        <div className='mb-1'> {/* ScheduleComponent */}
+          <ScheduleComponent
+              width='70%'
+              height='450px'
+              selectedDate={new Date()}
+              currentView='Agenda'
+                 
+              eventSettings={{
+                dataSource: eventos,
+                fields: {
+                  Id: 'id',
+                  Subject: 'titulo',
+                  Description: 'descricao',
+                  StartTime: 'data_hora_inicio',
+                  IsAllDay: 'dia_inteiro',
+                  ObraId: 'id_obra',
+                  entregue: 'entregue',
+                  entregue_em: 'entregue_em',
+                }
+              }}
+              //group={{ resources: ['Resources'] }}
+
+              agendaDaysCount={15}  
+              > 
+              <ViewsDirective>                
+                <ViewDirective option='Day' />  
+                <ViewDirective option='Week' />                
+                <ViewDirective option='Month' />
+                <ViewDirective option='Agenda' allowVirtualScrolling={false}/>                
+                <ViewDirective option='TimelineDay' />
+                <ViewDirective option='TimelineMonth' />
+                </ViewsDirective>
+                
+            <Inject services={[Agenda, DragAndDrop, Resize, Month, Week, Day]} />
+          </ScheduleComponent>
+        </div>
+
+       <div> {/* PropertyPane, debaixo da Agenda, dentro da mesma coluna 2, mais o botão embaixo */}  
+        <PropertyPane title='Recursos'>
+          <table id='property' title='Properties' style={{ width: '100%' }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left', padding: '5px' }}>ID</th>
+                <th style={{ textAlign: 'left', padding: '5px' }}>Nome do Recurso</th>
+              </tr>
+            </thead>
+            <tbody>
+              {resourceData.map((resource: any, index: number) => (
+                <tr key={index}>
+                  <td style={{ padding: '2px' }}>{resource.id}</td>
+                  <td style={{ padding: '2px' }}>{resource.text}</td>
+                </tr>
+              ))}
+            </tbody>
           </table>
         </PropertyPane>
-    </div>
-        <button onClick={handleSaveButton} className="bg-blue-500 text-white p-2 rounded">
+
+          <button onClick={handleSaveButton} className="bg-blue-500 text-white p-2 rounded">
           Salvar Alterações
-        </button>
-    <div className='col-md-9'>
-    <ScheduleComponent
-      width='70%'
-      height='350px'
-      selectedDate={new Date()}
-      currentView='Agenda'   
-      // eventSettings={{
-      //   dataSource: tasks,
-      //   fields: {
-      //     id: 'TaskID',
-      //     subject: 'taskName',
-      //     startTime: 'StartDate',
-      //     endTime: 'EndDate',
-      //     description: 'notes',
-      //     resourceId: 'Resources'
-      //   }
-      // }}
-      // group={{ resources: ['Resources'] }}      
-      > 
-      <Inject services={[Day, Month, Week, Agenda, TimelineMonth, TimelineViews, DragAndDrop, Resize]} />
-      </ScheduleComponent>
-    </div>
+          </button>
+
+        </div> 
+
+      </div>
+    
   </div>
   )
 }
